@@ -1,12 +1,16 @@
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from config.settings import settings
 
 
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200
-)
+def get_text_splitter() -> RecursiveCharacterTextSplitter:
+    return RecursiveCharacterTextSplitter(
+        chunk_size=settings.CHUNK_SIZE,
+        chunk_overlap=settings.CHUNK_OVERLAP,
+    )
 
 
 def chunk_documents(documents: list[Document]) -> list[Document]:
-    return text_splitter.split_documents(documents)
+    splitter = get_text_splitter()
+    return splitter.split_documents(documents)

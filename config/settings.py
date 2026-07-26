@@ -20,7 +20,7 @@ class Settings:
     EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 
     # LLM
-    LLM_MODEL = "llama3"
+    LLM_MODEL = "qwen2.5:0.5b"
 
     # Chunking
     CHUNK_SIZE = 1000

@@ -1,38 +1,74 @@
+# ==========================
+# Web Framework
+# ==========================
 fastapi
 uvicorn
 
+# ==========================
+# LangChain
+# ==========================
 langchain
-langchain-community
 langchain-core
+langchain-community
+langchain-text-splitters
+langchain-huggingface
+langchain-chroma
+langchain-ollama
 langserve
-
 langsmith
 
+# ==========================
+# Vector Databases
+# ==========================
 chromadb
-
-sentence-transformers
-huggingface-hub
-
 faiss-cpu
 
-ollama
+# ==========================
+# Embedding Models
+# ==========================
+sentence-transformers
+huggingface-hub
+transformers
 
+# ==========================
+# Environment
+# ==========================
 python-dotenv
-
 pydantic
+pyyaml
 
+# ==========================
+# Tokenization
+# ==========================
 tiktoken
 
+# ==========================
+# Repository Analysis
+# ==========================
 GitPython
 
+# ==========================
+# Document Loading
+# ==========================
 unstructured
-
 pypdf
 
+# ==========================
+# HTTP Client
+# ==========================
+httpx
+
+# ==========================
+# Logging
+# ==========================
+loguru
+
+# ==========================
+# Utilities
+# ==========================
+tqdm
+
+# ==========================
+# Testing
+# ==========================
 pytest
-
-langchain-huggingface
-
-langchain-chroma
-
-langchain-text-splitters

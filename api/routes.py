@@ -1,32 +1,97 @@
 from fastapi import APIRouter
 
-from core.loader import load_repository
-from core.chunker import chunk_documents
-from core.vectorstore import create_vectorstore
-from core.rag import ask_question
+from models.requests import ChatRequest, RepositoryRequest
+from models.responses import ChatResponse, IndexResponse
+from services.chat_service import ChatService
+from services.indexing_service import IndexingService
+from services.repository_service import RepositoryService
+
+from models.repository_response import (
+    RepositoryClassesResponse,
+    RepositoryFunctionsResponse,
+    RepositoryImportsResponse,
+    RepositoryStatsResponse,
+)
+
 
 router = APIRouter()
 
-
-@router.post("/index")
-def index_repository(repository_path: str):
-
-    documents = load_repository(repository_path)
-
-    chunks = chunk_documents(documents)
-
-    create_vectorstore(chunks)
-
-    return {
-        "message": "Repository indexed successfully!"
-    }
+indexing_service = IndexingService()
+chat_service = ChatService()
 
 
-@router.get("/chat")
-def chat(question: str):
+@router.post(
+    "/index",
+    response_model=IndexResponse
+)
+def index_repository(request: RepositoryRequest):
 
-    response = ask_question(question)
+    total_chunks = indexing_service.index_repository(
+        request.repository_path
+    )
 
-    return {
-        "answer": response
-    }
+    return IndexResponse(
+        message="Repository indexed successfully",
+        chunks=total_chunks,
+    )
+
+
+@router.post(
+    "/chat",
+    response_model=ChatResponse,
+)
+def chat(request: ChatRequest):
+
+    result = chat_service.chat(
+        request.question
+    )
+
+    return ChatResponse(
+        answer=result["answer"],
+        sources=result["sources"],
+    )
+
+repository_service = RepositoryService()
+
+@router.get(
+    "/repository/classes",
+    response_model=RepositoryClassesResponse,
+)
+def repository_classes():
+
+    return RepositoryClassesResponse(
+        classes=repository_service.get_classes()
+    )
+
+
+@router.get(
+    "/repository/functions",
+    response_model=RepositoryFunctionsResponse,
+)
+def repository_functions():
+
+    return RepositoryFunctionsResponse(
+        functions=repository_service.get_functions()
+    )
+
+
+@router.get(
+    "/repository/imports",
+    response_model=RepositoryImportsResponse,
+)
+def repository_imports():
+
+    return RepositoryImportsResponse(
+        imports=repository_service.get_imports()
+    )
+
+
+@router.get(
+    "/repository/stats",
+    response_model=RepositoryStatsResponse,
+)
+def repository_stats():
+
+    stats = repository_service.get_stats()
+
+    return RepositoryStatsResponse(**stats)

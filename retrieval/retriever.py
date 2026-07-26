@@ -1,6 +1,6 @@
 from langchain_chroma import Chroma
 
-from core.embeddings import embeddings
+from indexing.embeddings import embeddings
 
 
 VECTOR_DB_PATH = "storage/chroma_db"

@@ -1,62 +1,51 @@
-import os
-from langchain_core.documents import Document
+from pathlib import Path
+
+from langchain_community.document_loaders import DirectoryLoader
+
+from analyzer.repository_analyzer import RepositoryAnalyzer
 
 
-# Folders that we do NOT want to index
-IGNORE_DIRS = {
-    ".git",
-    "venv",
-    "__pycache__",
-    "node_modules",
-    "dist",
-    "build",
-    ".idea",
-    ".vscode",
-}
+analyzer = RepositoryAnalyzer()
 
 
 def load_repository(repository_path: str):
-    """
-    Reads all text files from a repository.
 
-    Args:
-        repository_path (str):
-            Path to the repository.
+    loader = DirectoryLoader(
+        repository_path,
+        glob="**/*",
+        show_progress=True,
+        silent_errors=True,
+    )
 
-    Returns:
-        list:
-            [
-                {
-                    "path": "...",
-                    "content": "..."
-                }
-            ]
-    """
+    documents = loader.load()
 
-    documents = []
+    for document in documents:
 
-    for root, dirs, files in os.walk(repository_path):
+        file_path = Path(document.metadata["source"])
 
-        # Skip ignored directories
-        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
+        analysis = analyzer.analyze(str(file_path))
 
-        for filename in files:
+        metadata = {
+            "file_path": str(file_path),
+            "file_name": file_path.name,
+            "extension": file_path.suffix,
+            "language": analysis.get("language", ""),
+            "line_count": analysis.get("line_count", 0),
 
-            file_path = os.path.join(root, filename)
+            # Chroma doesn't support list metadata
+            "classes": ",".join(
+                analysis.get("classes", [])
+            ),
 
-            try:
-                with open(file_path, "r", encoding="utf-8") as file:
+            "functions": ",".join(
+                analysis.get("functions", [])
+            ),
 
-                    documents.append(
-                        Document(
-                            page_content=file.read(),
-                            metadata={
-                                "source": file_path
-                            }
-                        )
-                    )
-            except Exception:
-                # Ignore binary files or unreadable files
-                continue
+            "imports": ",".join(
+                analysis.get("imports", [])
+            ),
+        }
+
+        document.metadata.update(metadata)
 
     return documents
