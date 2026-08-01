@@ -75,3 +75,5 @@ pytest
 
 mcp
 anyio
+
+langgraph

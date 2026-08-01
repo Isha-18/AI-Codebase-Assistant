@@ -47,8 +47,8 @@ def chat(request: ChatRequest):
     )
 
     return ChatResponse(
-        answer=result["answer"],
-        sources=result["sources"],
+        answer=result,
+        sources=[],
     )
 
 repository_service = RepositoryService()

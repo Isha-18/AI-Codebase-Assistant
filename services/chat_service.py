@@ -1,12 +1,18 @@
-from services.agent_service import AgentService
+from langchain_core.messages import HumanMessage
+
+from graph import graph
 
 
 class ChatService:
 
-    def __init__(self):
-
-        self.agent = AgentService()
-
     def chat(self, question: str):
 
-        return self.agent.chat(question)
+        result = graph.invoke(
+            {
+                "messages": [
+                    HumanMessage(content=question)
+                ]
+            }
+        )
+
+        return result["messages"][-1].content
