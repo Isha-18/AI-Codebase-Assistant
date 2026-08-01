@@ -1,9 +1,12 @@
 from langgraph.graph import START
-from langgraph.graph import END
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import tools_condition
 
-from graph.nodes import RouterNode, LLMNode
+from graph.memory import memory
+from graph.nodes import (
+    RouterNode,
+    LLMNode,
+)
 from graph.state import AgentState
 from graph.tool_registry import tool_node
 
@@ -13,7 +16,9 @@ class GraphBuilder:
     @staticmethod
     def build():
 
-        workflow = StateGraph(AgentState)
+        workflow = StateGraph(
+            AgentState
+        )
 
         workflow.add_node(
             "router",
@@ -50,4 +55,6 @@ class GraphBuilder:
             "llm",
         )
 
-        return workflow.compile()
+        return workflow.compile(
+            checkpointer=memory
+        )

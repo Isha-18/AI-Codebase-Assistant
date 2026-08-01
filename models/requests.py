@@ -7,3 +7,4 @@ class RepositoryRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     question: str
+    thread_id: str

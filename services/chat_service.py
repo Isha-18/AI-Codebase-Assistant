@@ -5,14 +5,28 @@ from graph import graph
 
 class ChatService:
 
-    def chat(self, question: str):
+    def chat(
+        self,
+        question: str,
+        thread_id: str,
+    ):
 
         result = graph.invoke(
             {
                 "messages": [
-                    HumanMessage(content=question)
+                    HumanMessage(
+                        content=question
+                    )
                 ]
-            }
+            },
+            config={
+                "configurable": {
+                    "thread_id": thread_id
+                }
+            },
         )
 
-        return result["messages"][-1].content
+        return {
+            "answer": result["messages"][-1].content,
+            "sources": [],
+        }

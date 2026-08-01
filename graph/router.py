@@ -1,6 +1,21 @@
 class Router:
 
     @staticmethod
-    def route(state):
+    def execute(state):
 
-        return "repository_chat"
+        print("\n========== LLM INPUT ==========")
+        print(state["messages"])
+
+        response = graph_llm.invoke(
+            state["messages"]
+        )
+
+        print("\n========== LLM RESPONSE ==========")
+        print(response)
+
+        print("\n========== TOOL CALLS ==========")
+        print(response.tool_calls)
+
+        return {
+            "messages": [response]
+        }

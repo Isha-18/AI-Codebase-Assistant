@@ -3,6 +3,7 @@ from mcp.server.fastmcp import FastMCP
 from services.chat_service import ChatService
 from services.repository_service import RepositoryService
 from services.indexing_service import IndexingService
+from uuid import uuid4
 
 
 chat_service = ChatService()
@@ -21,12 +22,12 @@ def register_tools(mcp: FastMCP):
         name="chat_repository",
         description="Ask questions about the indexed repository."
     )
-    def chat_repository(question: str) -> dict:
+    def chat_repository(question: str, thread_id:uuid4 ) -> dict:
         """
         Chat with the indexed repository.
         """
 
-        return chat_service.chat(question)
+        return chat_service.chat(question,thread_id)
 
     @mcp.tool(
         name="list_classes",

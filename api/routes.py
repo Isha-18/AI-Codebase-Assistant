@@ -43,13 +43,14 @@ def index_repository(request: RepositoryRequest):
 def chat(request: ChatRequest):
 
     result = chat_service.chat(
-        request.question
+        request.question,
+        request.thread_id
     )
 
     return ChatResponse(
-        answer=result,
-        sources=[],
-    )
+    answer=result["answer"],
+    sources=result["sources"],
+)
 
 repository_service = RepositoryService()
 
