@@ -1,5 +1,6 @@
 from indexing.loader import load_repository
 from indexing.chunker import chunk_documents
+from indexing.github_loader import clone_repository   # NEW
 from retrieval.vectorstore import create_vectorstore
 
 
@@ -15,6 +16,9 @@ class IndexingService:
         Returns:
             Number of chunks indexed.
         """
+        
+        if repository_path.startswith(("http://", "https://")):
+            repository_path = clone_repository(repository_path)
 
         documents = load_repository(repository_path)
 

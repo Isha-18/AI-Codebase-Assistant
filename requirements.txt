@@ -77,3 +77,4 @@ mcp
 anyio
 
 langgraph
+GitPython

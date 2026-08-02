@@ -5,6 +5,8 @@ from models.responses import ChatResponse, IndexResponse
 from services.chat_service import ChatService
 from services.indexing_service import IndexingService
 from services.repository_service import RepositoryService
+from fastapi.responses import StreamingResponse
+import json
 
 from models.repository_response import (
     RepositoryClassesResponse,
@@ -96,3 +98,41 @@ def repository_stats():
     stats = repository_service.get_stats()
 
     return RepositoryStatsResponse(**stats)
+
+@router.post("/chat/debug")
+def stream_chat(request: ChatRequest):
+
+    def generate():
+
+        for event in chat_service.stream(
+            request.question,
+            request.thread_id,
+        ):
+
+            yield (
+                json.dumps(
+                    event,
+                    default=str,
+                )
+                + "\n"
+            )
+
+    return StreamingResponse(
+        generate(),
+        media_type="application/json",
+    )
+
+@router.post("/chat/stream")
+async def stream_chat(request: ChatRequest):
+
+    return StreamingResponse(
+
+        chat_service.response_stream(
+
+            request.question,
+            request.thread_id,
+
+        ),
+
+        media_type="text/plain",
+    )
