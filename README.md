@@ -1,140 +1,88 @@
-# 🚀 Version 2 – Architecture Refactor
+# 🚀 Version 3 – LangGraph & Agentic AI Refactor
 
-Version 2 focuses on transforming the project from a simple Retrieval-Augmented Generation (RAG) application into a modular, production-ready AI Codebase Assistant. The primary goal of this release was to improve the project's architecture, separate responsibilities, and establish a scalable foundation for future AI capabilities such as Agents, Model Context Protocol (MCP), LangGraph, and LlamaIndex.
+Version 3 transforms the AI Codebase Assistant from a modular RAG application into an **Agentic AI platform**.
+
+Instead of directly invoking services from the API layer, user requests are now orchestrated through **LangGraph**, enabling intelligent tool calling, conversational memory, GitHub repository indexing, and streaming support while keeping the Service Layer as the single source of truth.
+
+This release focuses on **AI orchestration**, **production-ready architecture**, and **future extensibility**.
 
 ---
 
-## 🎯 Objectives
+# 🎯 Objectives
 
-- Improve code maintainability through modular design.
-- Separate business logic from API endpoints.
-- Follow Clean Architecture and SOLID principles.
-- Make the project easier to extend with new AI capabilities.
-- Prepare the codebase for production-level features.
+- Introduce LangGraph as the orchestration engine
+- Replace the temporary custom AgentService
+- Add conversational memory
+- Enable native tool calling
+- Support GitHub repository indexing
+- Add streaming graph execution
+- Prepare the architecture for multi-agent workflows
+- Preserve a clean Service Layer architecture
 
 ---
 
 # ✨ Major Improvements
 
-## 🏗️ Service Layer
-
-Introduced a dedicated service layer to separate API endpoints from business logic.
-
-### Added Services
-
-- `IndexingService`
-- `ChatService`
-- `RepositoryService`
-- `RAGService`
-
-Each service is responsible for a single domain, making the project easier to maintain, test, and extend.
-
 ---
 
-## 📡 Cleaner API Design
+## 🤖 LangGraph Integration
 
-Refactored FastAPI routes to act only as request handlers.
+The application is now orchestrated using **LangGraph** instead of a custom agent implementation.
 
-Previously:
+### Current Workflow
 
+```text
+REST Client
+      │
+      ▼
+FastAPI
+      │
+      ▼
+ChatService
+      │
+      ▼
+LangGraph
+      │
+      ▼
+LLM
+      │
+      ▼
+Tool Execution
+      │
+      ▼
+LLM
+      │
+      ▼
+Response
 ```
-Route
- ├── Load Repository
- ├── Chunk Documents
- ├── Generate Embeddings
- ├── Store in Chroma
- └── Return Response
-```
-
-Now:
-
-```
-Route
-    │
-    ▼
-Service Layer
-    │
-    ▼
-Business Logic
-```
-
-This significantly reduces duplication and improves code readability.
-
----
-
-## 📄 Request & Response Models
-
-Introduced dedicated Pydantic models for API validation.
-
-### Request Models
-
-- `RepositoryRequest`
-- `ChatRequest`
-
-### Response Models
-
-- `IndexResponse`
-- `ChatResponse`
-- `RepositoryClassesResponse`
-- `RepositoryFunctionsResponse`
-- `RepositoryImportsResponse`
-- `RepositoryStatsResponse`
 
 Benefits:
 
-- Automatic request validation
-- Better Swagger documentation
-- Strong typing
-- Easier API maintenance
+- Explicit AI workflow
+- Easier debugging
+- Better extensibility
+- Production-ready orchestration
 
 ---
 
-## 🤖 Improved RAG Pipeline
+## 🧠 Typed State Management
 
-The Retrieval-Augmented Generation pipeline was refactored into a dedicated `RAGService`.
+Introduced a strongly typed shared graph state.
 
-Enhancements include:
+The graph now maintains:
 
-- Prompt templates moved to external files
-- Cleaner chain construction
-- Metadata-aware context generation
-- Source citation support
-- Better separation of retrieval and generation logic
+- Conversation messages
+- Thread ID
+- Tool outputs
+- Intermediate workflow state
 
----
-
-## 🔍 Repository Intelligence
-
-Added Python AST analysis to understand the structure of the indexed repository.
-
-The analyzer now extracts:
-
-- Classes
-- Functions
-- Imports
-
-This metadata is stored alongside vector embeddings, enabling advanced repository analysis beyond semantic search.
+This provides a clean foundation for future memory and multi-agent capabilities.
 
 ---
 
-## 🗄️ Metadata Storage
+## 🛠️ Native Tool Calling
 
-Repository metadata is now indexed together with document embeddings inside ChromaDB.
-
-This enables future features such as:
-
-- Class search
-- Function search
-- Import search
-- Dependency analysis
-- Repository statistics
-- Architecture visualization
-
----
-
-## 🛠️ LangChain Tools
-
-Introduced LangChain Tools to expose repository capabilities as reusable AI tools.
+The assistant now uses **LangChain Tool Calling** instead of manually selecting tools.
 
 Current tools include:
 
@@ -144,73 +92,197 @@ Current tools include:
 - List Imports
 - Repository Statistics
 
-These tools form the foundation for future Agent-based workflows.
+The LLM dynamically decides when to invoke tools based on the user's request.
 
 ---
 
-## 📁 Modular Project Structure
+## 💬 Conversation Memory
 
-The project was reorganized into a more scalable architecture.
+Added conversation memory using **LangGraph Checkpointing**.
 
+Current capabilities:
+
+- Thread-based conversations
+- Short-term memory
+- Stateful interactions
+
+The architecture is ready for future long-term memory integration.
+
+---
+
+## ⚡ Streaming Support
+
+Added support for streaming graph execution.
+
+Streaming enables:
+
+- Real-time node execution
+- Intermediate workflow events
+- Tool execution visibility
+- Live response generation
+
+This greatly improves observability and debugging.
+
+---
+
+## 🔌 MCP Integration
+
+The existing MCP server has been retained without duplicating business logic.
+
+Both LangGraph and MCP use the same Service Layer.
+
+```text
+                FastAPI
+                   │
+              ChatService
+                   │
+      ┌────────────┴────────────┐
+      ▼                         ▼
+  LangGraph                 MCP Server
+      │                         │
+      └────────────┬────────────┘
+                   ▼
+             Service Layer
+        ├── ChatService
+        ├── RAGService
+        ├── RepositoryService
+        └── IndexingService
 ```
-AI-Codebase-Assistant/
 
-├── api/
-├── config/
-├── indexing/
-├── retrieval/
-├── services/
-├── tools/
-├── analyzers/
-├── models/
-├── prompts/
-└── storage/
+This keeps responsibilities clean while avoiding duplicated code.
+
+---
+
+## 🌐 GitHub Repository Indexing
+
+The indexing pipeline now supports both:
+
+- Local repositories
+- Public GitHub repositories
+
+Public repositories are cloned into a temporary directory before indexing, allowing repositories to be analyzed directly from GitHub.
+
+---
+
+## 🏗️ Improved Architecture
+
+The application now follows a layered architecture.
+
+```text
+REST Client
+      │
+      ▼
+FastAPI
+      │
+      ▼
+ChatService
+      │
+      ▼
+LangGraph
+      │
+ ┌────┼─────────────┐
+ │    │             │
+ ▼    ▼             ▼
+LLM  Tool Calling  Memory
+ │
+ ▼
+Service Layer
+ │
+ ├── RAGService
+ ├── RepositoryService
+ └── IndexingService
+ │
+ ▼
+ChromaDB + Embeddings
 ```
 
-Each module now has a clear responsibility, improving maintainability and reducing coupling.
+Business logic remains centralized inside the Service Layer.
+
+---
+
+## 📁 New Graph Module
+
+A dedicated graph package has been introduced.
+
+```text
+graph/
+
+├── builder.py
+├── graph_service.py
+├── llm.py
+├── nodes.py
+├── state.py
+└── tool_registry.py
+```
+
+This separates AI workflow orchestration from business logic.
 
 ---
 
 ## 🧩 Design Principles
 
-Version 2 follows several software engineering best practices:
+Version 3 follows:
 
 - Clean Architecture
 - SOLID Principles
 - Separation of Concerns
 - Single Responsibility Principle
-- Dependency Isolation
 - Modular Design
-
-These improvements make the codebase easier to understand, test, and extend.
+- Production AI Engineering Practices
+- Service Layer Pattern
 
 ---
 
-# 🚀 Foundation for Future Development
+# 🚀 Current Features
 
-Version 2 prepares the project for several advanced AI engineering features that will be introduced in future versions, including:
+The AI Codebase Assistant now supports:
 
-- LangChain Agents
-- AgentExecutor
-- Tool Calling
-- Model Context Protocol (MCP)
-- LlamaIndex Integration
-- LangGraph Workflows
-- Multi-Repository Support
+- Repository Indexing
 - GitHub Repository Indexing
-- Incremental Indexing
-- Streaming Responses
+- Retrieval-Augmented Generation (RAG)
+- Python AST Analysis
+- Repository Metadata Extraction
+- Semantic Search
+- LangGraph Workflow Orchestration
+- LangChain Tool Calling
 - Conversation Memory
+- Streaming Responses
+- MCP Server
+- MCP Tools
+- MCP Resources
+- MCP Prompts
+- Modular Service Layer
+- Production-Ready FastAPI Architecture
+
+---
+
+# 🚧 Roadmap
+
+The current architecture has been designed for gradual evolution.
+
+Upcoming features include:
+
+- Supervisor Pattern
+- Multi-Agent Workflows
+- Repository Agent
+- Documentation Agent
+- Code Review Agent
+- GitHub Agent
+- Human-in-the-Loop
+- Long-Term Memory
 - Hybrid Search
-- Advanced Retrieval Techniques
-- Multiple Vector Database Support (ChromaDB & FAISS)
+- Advanced RAG Techniques
+- Incremental Repository Indexing
+- LangSmith Tracing
+- Multi-LLM Support
+- Docker & Kubernetes Deployment
 
 ---
 
 # 📈 Outcome
 
-Version 2 establishes a scalable and maintainable architecture while preserving the existing functionality of the project.
+Version 3 marks the transition from a traditional Retrieval-Augmented Generation application into a **production-style Agentic AI platform**.
 
-Rather than simply adding new features, this release focuses on improving the internal design of the application so that future enhancements can be implemented with minimal refactoring.
+Instead of simply adding new AI features, this release establishes a scalable orchestration layer using **LangGraph**, enabling intelligent tool calling, conversation memory, GitHub repository analysis, and streaming workflows while preserving a clean, modular architecture.
 
-The AI Codebase Assistant has now evolved from a basic RAG application into a modular AI engineering platform, ready for production-grade retrieval, repository intelligence, agent workflows, and next-generation AI capabilities.
+The project is now well-positioned to evolve into a **multi-agent AI system** with minimal architectural changes.
