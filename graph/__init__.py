@@ -1,3 +1,3 @@
-from graph.builder import GraphBuilder
+from graph.builder import graph
 
-graph = GraphBuilder.build()
+__all__ = ["graph"]

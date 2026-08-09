@@ -1,6 +1,5 @@
-from langgraph.prebuilt import ToolNode
-
 from tools.rag_tools import codebase_chat
+
 from tools.repository_tools import (
     list_classes,
     list_functions,
@@ -8,12 +7,18 @@ from tools.repository_tools import (
     repository_statistics,
 )
 
-TOOLS = [
-    codebase_chat,
+from tools.indexing_tools import index_repository
+
+
+REPOSITORY_TOOLS = [
     list_classes,
     list_functions,
     list_imports,
     repository_statistics,
+    index_repository,
 ]
 
-tool_node = ToolNode(TOOLS)
+
+RAG_TOOLS = [
+    codebase_chat,
+]

@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List, Literal
 
 from pydantic import BaseModel
 
@@ -9,5 +9,13 @@ class IndexResponse(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    answer: str
-    sources: List[str]
+    status: Literal[
+        "completed",
+        "approval_required",
+    ]
+
+    answer: str | None = None
+
+    sources: List[str] = []
+
+    approval_request: dict[str, Any] | None = None

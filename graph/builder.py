@@ -1,60 +1,33 @@
-from langgraph.graph import START
-from langgraph.graph import StateGraph
-from langgraph.prebuilt import tools_condition
+from graph.agents.rag_agent import (
+    build_rag_agent,
+)
+
+from graph.agents.repository_agent import (
+    build_repository_agent,
+)
+
+from graph.agents.supervisor import (
+    build_supervisor_graph,
+)
 
 from graph.memory import memory
-from graph.nodes import (
-    RouterNode,
-    LLMNode,
+
+
+repository_agent = (
+    build_repository_agent()
 )
-from graph.state import AgentState
-from graph.tool_registry import tool_node
+
+rag_agent = (
+    build_rag_agent()
+)
 
 
-class GraphBuilder:
+workflow = build_supervisor_graph(
+    repository_agent=repository_agent,
+    rag_agent=rag_agent,
+)
 
-    @staticmethod
-    def build():
 
-        workflow = StateGraph(
-            AgentState
-        )
-
-        workflow.add_node(
-            "router",
-            RouterNode.execute,
-        )
-
-        workflow.add_node(
-            "llm",
-            LLMNode.execute,
-        )
-
-        workflow.add_node(
-            "tools",
-            tool_node,
-        )
-
-        workflow.add_edge(
-            START,
-            "router",
-        )
-
-        workflow.add_edge(
-            "router",
-            "llm",
-        )
-
-        workflow.add_conditional_edges(
-            "llm",
-            tools_condition,
-        )
-
-        workflow.add_edge(
-            "tools",
-            "llm",
-        )
-
-        return workflow.compile(
-            checkpointer=memory
-        )
+graph = workflow.compile(
+    checkpointer=memory
+)

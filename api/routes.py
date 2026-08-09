@@ -1,35 +1,47 @@
-from fastapi import APIRouter
-
-from models.requests import ChatRequest, RepositoryRequest
-from models.responses import ChatResponse, IndexResponse
-from services.chat_service import ChatService
-from services.indexing_service import IndexingService
-from services.repository_service import RepositoryService
-from fastapi.responses import StreamingResponse
 import json
 
+from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
+
+from models.requests import (
+    ApprovalRequest,
+    ChatRequest,
+    RepositoryRequest,
+)
+from models.responses import (
+    ChatResponse,
+    IndexResponse,
+)
 from models.repository_response import (
     RepositoryClassesResponse,
     RepositoryFunctionsResponse,
     RepositoryImportsResponse,
     RepositoryStatsResponse,
 )
+from services.chat_service import ChatService
+from services.indexing_service import IndexingService
+from services.repository_service import RepositoryService
 
 
 router = APIRouter()
 
 indexing_service = IndexingService()
 chat_service = ChatService()
+repository_service = RepositoryService()
 
 
 @router.post(
     "/index",
-    response_model=IndexResponse
+    response_model=IndexResponse,
 )
-def index_repository(request: RepositoryRequest):
+def index_repository(
+    request: RepositoryRequest,
+):
 
-    total_chunks = indexing_service.index_repository(
-        request.repository_path
+    total_chunks = (
+        indexing_service.index_repository(
+            request.repository_path
+        )
     )
 
     return IndexResponse(
@@ -42,19 +54,47 @@ def index_repository(request: RepositoryRequest):
     "/chat",
     response_model=ChatResponse,
 )
-def chat(request: ChatRequest):
+def chat(
+    request: ChatRequest,
+):
 
     result = chat_service.chat(
         request.question,
-        request.thread_id
+        request.thread_id,
     )
 
     return ChatResponse(
-    answer=result["answer"],
-    sources=result["sources"],
-)
+        status=result["status"],
+        answer=result["answer"],
+        sources=result["sources"],
+        approval_request=(
+            result["approval_request"]
+        ),
+    )
 
-repository_service = RepositoryService()
+
+@router.post(
+    "/chat/approval",
+    response_model=ChatResponse,
+)
+def chat_approval(
+    request: ApprovalRequest,
+):
+
+    result = chat_service.approve(
+        request.thread_id,
+        request.approved,
+    )
+
+    return ChatResponse(
+        status=result["status"],
+        answer=result["answer"],
+        sources=result["sources"],
+        approval_request=(
+            result["approval_request"]
+        ),
+    )
+
 
 @router.get(
     "/repository/classes",
@@ -97,10 +137,15 @@ def repository_stats():
 
     stats = repository_service.get_stats()
 
-    return RepositoryStatsResponse(**stats)
+    return RepositoryStatsResponse(
+        **stats
+    )
+
 
 @router.post("/chat/debug")
-def stream_chat(request: ChatRequest):
+def debug_chat(
+    request: ChatRequest,
+):
 
     def generate():
 
@@ -119,20 +164,19 @@ def stream_chat(request: ChatRequest):
 
     return StreamingResponse(
         generate(),
-        media_type="application/json",
+        media_type="application/x-ndjson",
     )
 
+
 @router.post("/chat/stream")
-async def stream_chat(request: ChatRequest):
+async def response_stream(
+    request: ChatRequest,
+):
 
     return StreamingResponse(
-
         chat_service.response_stream(
-
             request.question,
             request.thread_id,
-
         ),
-
         media_type="text/plain",
     )
