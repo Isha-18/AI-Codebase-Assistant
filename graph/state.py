@@ -1,3 +1,4 @@
+
 from typing import Annotated, Any, TypedDict
 
 from langchain_core.messages import BaseMessage
@@ -20,3 +21,18 @@ class AgentState(TypedDict, total=False):
     approval_request: dict[str, Any] | None
 
     agent_route: str | None
+
+    review_type: str | None
+
+    # Results produced by specialized agents.
+    agent_results: dict[str, Any]
+
+    # Agent currently responsible for the task.
+    current_agent: str | None
+
+    # Number of agent transitions performed.
+    agent_iterations: int
+
+    # Prevents agents from looping indefinitely.
+    max_agent_iterations: int
+

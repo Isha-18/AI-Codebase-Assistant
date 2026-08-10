@@ -22,3 +22,7 @@ REPOSITORY_TOOLS = [
 RAG_TOOLS = [
     codebase_chat,
 ]
+
+REVIEW_TOOLS = [
+    codebase_chat,
+]
