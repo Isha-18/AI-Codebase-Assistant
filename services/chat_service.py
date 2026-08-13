@@ -75,14 +75,21 @@ class ChatService:
 
             result = graph.invoke(
                 {
-                    "messages": [
-                        HumanMessage(
-                            content=question
-                        )
-                    ]
-                },
-                config=config,
-            )
+                "messages": [
+                    HumanMessage(
+                        content=question
+                    )
+                ],
+                "agent_results": {},
+                "agent_iterations": 0,
+                "max_agent_iterations": 3,
+                "current_agent": None,
+                "agent_route": None,
+                "continue_workflow": False,
+                "workflow_complete": False,
+            },
+            config=config,
+)
 
         except Exception:
 

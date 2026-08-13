@@ -12,48 +12,62 @@ logger = logging.getLogger(__name__)
 SUPERVISOR_SYSTEM_PROMPT = """
 You are the supervisor of an AI Codebase Assistant.
 
-You must decide which specialized agent should handle
+Your job is to decide which specialized agent should handle
 the user's request.
 
 Available agents:
 
-1. repository
-   Use for:
-   - listing classes
-   - listing functions
-   - listing imports
-   - repository statistics
-   - indexing a repository
-   - repository structure or metadata
+repository
+- Repository structure
+- Classes
+- Functions
+- Imports
+- Repository statistics
+- Repository indexing
+- Repository metadata
 
-2. rag
-   Use for:
-   - understanding code
-   - explaining implementation
-   - answering questions about how code works
-   - finding relevant code and explaining it
-   - reasoning over the repository
+rag
+- Understanding code
+- Explaining implementation
+- Explaining how features work
+- Answering questions using repository context
+- Finding relevant code
 
-3. code_review
-   Use for:
-   - reviewing code quality
-   - SOLID principle analysis
-   - architecture review
-   - identifying code smells
-   - maintainability analysis
-   - refactoring suggestions
+code_review
+- Code quality
+- SOLID principles
+- Architecture review
+- Code smells
+- Maintainability
+- Refactoring suggestions
+
+done
+- Use when the task has already been sufficiently completed
+- Use when no additional specialized agent is required
+
+IMPORTANT:
+
+If an agent has already produced a useful result, inspect that
+result before deciding what should happen next.
+
+A task may require multiple agents.
+
+For example:
+
+"Find the authentication classes and review their architecture."
+
+could require:
+
+repository
+then
+code_review
 
 Return ONLY one word:
 
 repository
-
-or
-
 rag
-
-or
-
 code_review
+done
 """
 
 
@@ -61,7 +75,40 @@ VALID_ROUTES = {
     "repository",
     "rag",
     "code_review",
+    "done",
 }
+
+
+def _extract_agent_results(
+    state: AgentState,
+) -> str:
+    """
+    Convert previous agent results into compact
+    context for the Supervisor.
+    """
+
+    results = state.get(
+        "agent_results",
+        {},
+    )
+
+    if not results:
+        return "No previous agent results."
+
+    sections = []
+
+    for agent_name, result in results.items():
+
+        sections.append(
+            f"""
+Agent: {agent_name}
+
+Result:
+{result}
+"""
+        )
+
+    return "\n".join(sections)
 
 
 def supervisor_node(
@@ -90,70 +137,138 @@ def supervisor_node(
         max_iterations,
     )
 
-    # Safety protection against endless agent loops.
+    # Safety protection.
     if iterations >= max_iterations:
+
         logger.warning(
-            "agent=supervisor event=max_iterations_reached "
+            "agent=supervisor "
+            "event=max_iterations_reached "
             "iterations=%d",
             iterations,
         )
 
         return {
-            "agent_route": None,
+            "agent_route": "done",
             "current_agent": None,
+            "continue_workflow": False,
+            "workflow_complete": True,
         }
+
+    agent_results = _extract_agent_results(
+        state
+    )
+
+    supervisor_context = f"""
+Previous agent results:
+
+{agent_results}
+
+Current agent:
+{state.get("current_agent")}
+
+Agent iterations:
+{iterations}/{max_iterations}
+
+Based on the original user request and the
+previous agent results, decide whether:
+
+1. Another specialized agent is required
+OR
+2. The task is complete.
+
+Return ONLY one word.
+"""
 
     supervisor_messages = [
         SystemMessage(
-            content=SUPERVISOR_SYSTEM_PROMPT
+            content=(
+                SUPERVISOR_SYSTEM_PROMPT
+                + "\n"
+                + supervisor_context
+            )
         ),
         *messages,
     ]
 
     try:
+
         response = supervisor_llm.invoke(
             supervisor_messages
         )
 
     except Exception:
+
         logger.exception(
             "agent=supervisor event=failed"
         )
 
-        # Keep the existing safe fallback.
-        route = "rag"
+        # Safe fallback.
+        route = "done"
 
     else:
+
         decision = (
-            response.content
+            str(response.content)
             .strip()
             .lower()
         )
 
         logger.info(
-            "agent=supervisor event=decision "
+            "agent=supervisor "
+            "event=decision "
             "decision=%s",
             decision,
         )
 
         route = None
 
+        # Check exact words first.
         for candidate in VALID_ROUTES:
-            if candidate in decision:
+
+            if decision == candidate:
+
                 route = candidate
                 break
 
+        # Fallback for models that return
+        # additional text.
         if route is None:
+
+            for candidate in VALID_ROUTES:
+
+                if candidate in decision:
+
+                    route = candidate
+                    break
+
+        if route is None:
+
             logger.warning(
-                "agent=supervisor event=invalid_decision "
+                "agent=supervisor "
+                "event=invalid_decision "
                 "response=%s",
-                response.content,
+                decision,
             )
 
-            route = "rag"
+            route = "done"
+
+    if route == "done":
+
+        logger.info(
+            "agent=supervisor "
+            "event=workflow_completed"
+        )
+
+        return {
+            "agent_route": "done",
+            "current_agent": None,
+            "continue_workflow": False,
+            "workflow_complete": True,
+        }
 
     logger.info(
-        "agent=supervisor event=route_selected "
+        "agent=supervisor "
+        "event=route_selected "
         "route=%s",
         route,
     )
@@ -162,6 +277,8 @@ def supervisor_node(
         "agent_route": route,
         "current_agent": route,
         "agent_iterations": iterations + 1,
+        "continue_workflow": False,
+        "workflow_complete": False,
     }
 
 
@@ -175,13 +292,36 @@ def route_from_supervisor(
     if route == "repository":
         return "repository"
 
-    if route == "code_review":
-        return "code_review"
-
     if route == "rag":
         return "rag"
 
+    if route == "code_review":
+        return "code_review"
+
+    if route == "done":
+        return END
+
     return END
+
+
+def route_after_agent(
+    state: AgentState,
+):
+    """
+    Every specialized agent returns control
+    to the Supervisor.
+
+    The Supervisor then decides whether another
+    agent is required.
+    """
+
+    if state.get(
+        "workflow_complete",
+        False,
+    ):
+        return END
+
+    return "supervisor"
 
 
 def build_supervisor_graph(
@@ -229,20 +369,31 @@ def build_supervisor_graph(
         },
     )
 
-    workflow.add_edge(
+    workflow.add_conditional_edges(
         "repository",
-        END,
+        route_after_agent,
+        {
+            "supervisor": "supervisor",
+            END: END,
+        },
     )
 
-    workflow.add_edge(
+    workflow.add_conditional_edges(
         "rag",
-        END,
+        route_after_agent,
+        {
+            "supervisor": "supervisor",
+            END: END,
+        },
     )
 
-    workflow.add_edge(
+    workflow.add_conditional_edges(
         "code_review",
-        END,
+        route_after_agent,
+        {
+            "supervisor": "supervisor",
+            END: END,
+        },
     )
 
     return workflow
-

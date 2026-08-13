@@ -113,9 +113,19 @@ def build_rag_agent():
         route_after_rag_llm,
         {
             "tools": "rag_tools",
-            END: END,
+            END: "rag_complete",
         },
     )
+
+    workflow.add_node(
+        "rag_complete",
+        rag_agent_complete,
+)
+
+    workflow.add_edge(
+        "rag_complete",
+        END,
+)
 
     workflow.add_edge(
         "rag_tools",
@@ -123,3 +133,38 @@ def build_rag_agent():
     )
 
     return workflow.compile()
+
+def rag_agent_complete(state: AgentState):
+    """
+    Store the RAG agent's result and return
+    control to the Supervisor.
+    """
+
+    messages = state.get(
+        "messages",
+        [],
+    )
+
+    result = ""
+
+    if messages:
+        result = getattr(
+            messages[-1],
+            "content",
+            "",
+        )
+
+    agent_results = dict(
+        state.get(
+            "agent_results",
+            {},
+        )
+    )
+
+    agent_results["rag"] = result
+
+    return {
+        "agent_results": agent_results,
+        "current_agent": "rag",
+        "continue_workflow": True,
+    }

@@ -9,6 +9,7 @@ from langgraph.prebuilt import (
 
 from graph.state import AgentState
 from graph.llm import repository_llm
+import logging
 
 from graph.nodes import (
     ApprovalNode,
@@ -22,6 +23,7 @@ repository_tool_node = ToolNode(
     REPOSITORY_TOOLS
 )
 
+logger = logging.getLogger(__name__)
 
 def repository_llm_node(state):
 
@@ -86,6 +88,11 @@ def build_repository_agent():
         repository_tool_node,
     )
 
+    workflow.add_node(
+        "repository_complete",
+        repository_agent_complete,
+    )
+
     workflow.add_edge(
         START,
         "llm",
@@ -96,7 +103,7 @@ def build_repository_agent():
         route_after_llm,
         {
             "approval": "approval",
-            END: END,
+            END: "repository_complete",
         },
     )
 
@@ -115,3 +122,81 @@ def build_repository_agent():
     )
 
     return workflow.compile()
+
+def repository_agent_complete(state: AgentState):
+    """
+    Store the repository agent's result and return
+    control to the Supervisor.
+    """
+
+    messages = state.get(
+        "messages",
+        [],
+    )
+
+    result = ""
+
+    if messages:
+        result = getattr(
+            messages[-1],
+            "content",
+            "",
+        )
+
+    agent_results = dict(
+        state.get(
+            "agent_results",
+            {},
+        )
+    )
+
+    agent_results["repository"] = result
+
+    return {
+        "agent_results": agent_results,
+        "current_agent": "repository",
+        "continue_workflow": True,
+    }
+
+from graph.state import AgentState
+
+
+def repository_agent_complete(
+    state: AgentState,
+):
+    messages = state.get(
+        "messages",
+        [],
+    )
+
+    result = ""
+
+    if messages:
+
+        result = getattr(
+            messages[-1],
+            "content",
+            "",
+        )
+
+    agent_results = dict(
+        state.get(
+            "agent_results",
+            {},
+        )
+    )
+
+    agent_results["repository"] = result
+
+    logger.info(
+        "agent=repository "
+        "event=completed "
+        "result_size=%d",
+        len(str(result)),
+    )
+
+    return {
+        "agent_results": agent_results,
+        "current_agent": "repository",
+        "continue_workflow": True,
+    }

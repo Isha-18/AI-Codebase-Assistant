@@ -61,9 +61,18 @@ def build_code_review_agent():
         review_route,
         {
             "tools": "tools",
-            END: END,
+            END: "review_complete",
         },
     )
+    workflow.add_node(
+        "review_complete",
+        code_review_agent_complete,
+)
+
+    workflow.add_edge(
+        "review_complete",
+        END,
+)
 
     workflow.add_edge(
         "tools",
@@ -71,3 +80,39 @@ def build_code_review_agent():
     )
 
     return workflow.compile()
+
+def code_review_agent_complete(
+    state: AgentState,
+):
+    """
+    Store the code review result.
+    """
+
+    messages = state.get(
+        "messages",
+        [],
+    )
+
+    result = ""
+
+    if messages:
+        result = getattr(
+            messages[-1],
+            "content",
+            "",
+        )
+
+    agent_results = dict(
+        state.get(
+            "agent_results",
+            {},
+        )
+    )
+
+    agent_results["code_review"] = result
+
+    return {
+        "agent_results": agent_results,
+        "current_agent": "code_review",
+        "continue_workflow": True,
+    }
