@@ -1,254 +1,162 @@
-# AI-Codebase-Assistant
+# 🤖 AI-Codebase-Assistant
 
-An Agentic AI application that understands and interacts with software repositories using **RAG, LangGraph, MCP, LLM tool calling, and repository analysis**.
+An **Agentic AI Codebase Assistant** that understands, analyzes, and interacts with software repositories using **RAG, LangGraph, Multi-Agent Systems, MCP, LLM Tool Calling, Repository Analysis, Memory, and Human-in-the-Loop workflows**.
 
-The project started as a RAG-based Codebase Assistant and has evolved into a **LangGraph-based multi-agent architecture** with conversation memory, human-in-the-loop approval, repository tools, GitHub repository indexing, and agent-level observability.
+The project started as a simple RAG-based codebase question-answering system and has evolved incrementally into a **multi-agent architecture** where specialized agents collaborate under the control of a Supervisor.
 
----
-
-# Version 4
-
-## What's New in Version 4
-
-Version 4 evolves the application from a single-agent LangGraph system into the foundation of a **multi-agent AI architecture**.
-
-The major changes are:
-
-* LangGraph-based agent orchestration
-* Supervisor agent
-* Specialized Repository Agent
-* Specialized RAG Agent
-* Agent-level logging and observability
-* Human-in-the-loop approval using LangGraph interrupts
-* Thread-based conversation memory
-* LangGraph checkpointing
-* Tool-based repository interaction
-* Separation of Repository and RAG tools
-* Existing Service Layer retained as the single source of truth
-* GitHub repository indexing support
-* LangSmith-compatible graph/LLM tracing
-* Streaming graph execution
+> **Core principle:** Agents orchestrate. Services own the business logic.
 
 ---
 
-# Architecture
+# 🚀 Project Evolution
 
-The current architecture is:
+The project has evolved through several architectural stages:
 
 ```text
-                        REST Client
-                            |
-                            v
-                        FastAPI
-                            |
-                            v
-                       ChatService
-                            |
-                            v
-                    Supervisor Agent
-                         LLM
-                            |
-              +-------------+-------------+
-              |                           |
-              v                           v
-       Repository Agent              RAG Agent
-              |                           |
-         Repository LLM                RAG LLM
-              |                           |
-       Repository Tools               RAG Tools
-              |                           |
-              v                           v
-       RepositoryService              RAGService
-              |                           |
-              v                           v
-       Repository Data             ChromaDB / RAG
-              |
-              v
-       IndexingService
+RAG
+  ↓
+Service Layer
+  ↓
+LangGraph
+  ↓
+Tool Calling
+  ↓
+MCP
+  ↓
+Conversation Memory
+  ↓
+Human-in-the-Loop
+  ↓
+Multi-Agent AI
+  ↓
+Agent-to-Agent Handoffs
 ```
 
-The important architectural principle is:
-
-```text
-                 Service Layer
-                      |
-          +-----------+-----------+
-          |                       |
-          v                       v
-      LangGraph                  MCP
-```
-
-Business logic remains inside the existing services.
-
-Agents and tools are orchestration/integration layers and should not duplicate service logic.
+The goal has not been to rebuild the application at every stage, but to **continuously improve the architecture while keeping the existing codebase and service layer intact**.
 
 ---
 
-# Version History
+# 🧠 Current Architecture
 
-## Version 1 — Initial RAG Assistant
+The current system uses a Supervisor-driven multi-agent workflow.
 
-The project originally provided a basic repository question-answering pipeline.
+Instead of:
 
 ```text
-Repository
-    |
-    v
-Loader
-    |
-    v
-Chunking
-    |
-    v
-Embeddings
-    |
-    v
-ChromaDB
-    |
-    v
-Retriever
-    |
-    v
+User
+  ↓
 LLM
-    |
-    v
-Answer
+  ↓
+Tools
+  ↓
+Response
 ```
 
-Technologies included:
-
-* Python
-* FastAPI
-* LangChain
-* HuggingFace Embeddings
-* ChromaDB
-* Ollama
-
----
-
-# Version 2 — Service Layer + Repository Intelligence
-
-The project was refactored into a service-oriented architecture.
-
-Existing services include:
-
-* `ChatService`
-* `RepositoryService`
-* `RAGService`
-* `IndexingService`
-
-Repository analysis was also introduced using Python AST analysis.
-
-The system can extract information such as:
-
-* Classes
-* Functions
-* Imports
-* Repository statistics
-
-The RAG pipeline also stores repository metadata with the indexed chunks.
-
----
-
-# Version 3 — LangGraph + MCP + Memory
-
-LangGraph was introduced for agent orchestration.
-
-The application gained:
-
-* `StateGraph`
-* Typed graph state
-* Nodes
-* Edges
-* Conditional execution
-* Tool calling
-* `ToolNode`
-* Checkpointing
-* Thread-based conversation memory
-* Streaming graph execution
-
-MCP integration was also introduced with:
-
-* MCP Tools
-* MCP Resources
-* MCP Prompts
-
-MCP and LangGraph both use the existing Service Layer.
-
----
-
-# Version 4 — Agentic Multi-Agent Architecture
-
-Version 4 introduces the foundation of the multi-agent architecture.
-
-Instead of one LLM performing every task:
+the system now follows:
 
 ```text
-User
- |
- v
-Single LLM
- |
- +-- Tools
+                         User
+                           │
+                           ▼
+                        FastAPI
+                           │
+                           ▼
+                     ChatService
+                           │
+                           ▼
+                      Supervisor
+                           │
+              ┌────────────┼────────────┐
+              │            │            │
+              ▼            ▼            ▼
+        Repository       RAG Agent   Code Review
+           Agent                       Agent
+              │            │            │
+              └────────────┼────────────┘
+                           │
+                           ▼
+                       Supervisor
+                           │
+                           ▼
+                     Final Response
 ```
 
-the system now uses:
-
-```text
-User
- |
- v
-Supervisor LLM
- |
- +-------------------+
- |                   |
- v                   v
-Repository Agent   RAG Agent
-```
-
-The Supervisor decides which specialized agent should handle the request.
+The Supervisor decides **which specialized agent should act next** instead of making one LLM responsible for every task.
 
 ---
 
-# Supervisor Agent
+# 🏗️ Multi-Agent Architecture
 
-The Supervisor is responsible for routing requests.
+## Supervisor Agent
 
-For example:
+The Supervisor is responsible for:
+
+- Understanding the user's request
+- Selecting the appropriate specialized agent
+- Managing agent-to-agent handoffs
+- Deciding when the task is complete
+- Controlling the number of agent iterations
+- Preventing unnecessary agent execution
+
+The Supervisor is an **orchestration layer**, not a repository business-logic layer.
+
+Example:
 
 ```text
-"List all classes in my repository"
-              |
-              v
-         Supervisor
-              |
-              v
-        Repository Agent
+User:
+"Find the authentication classes and review their architecture"
+
+              │
+              ▼
+        ┌─────────────┐
+        │ Supervisor  │
+        └──────┬──────┘
+               │
+               ▼
+      ┌─────────────────┐
+      │ Repository Agent│
+      └────────┬────────┘
+               │
+        Finds authentication
+        classes and code
+               │
+               ▼
+        ┌─────────────┐
+        │ Supervisor  │
+        └──────┬──────┘
+               │
+               ▼
+      ┌──────────────────┐
+      │ Code Review Agent│
+      └────────┬─────────┘
+               │
+               ▼
+          Final Result
 ```
 
-While:
-
-```text
-"Explain how authentication works"
-              |
-              v
-         Supervisor
-              |
-              v
-           RAG Agent
-```
-
-The Supervisor does not directly perform repository operations.
-
-Its responsibility is orchestration.
+This allows the system to break complex tasks into specialized steps.
 
 ---
 
-# Repository Agent
+# 🔎 Specialized Agents
 
-The Repository Agent handles repository-level operations.
+The current architecture contains three specialized agents.
 
-Current repository tools include:
+## 1. Repository Agent
+
+The Repository Agent handles structural and repository-level operations.
+
+Typical responsibilities include:
+
+- Finding classes
+- Finding functions
+- Finding imports
+- Repository statistics
+- Repository indexing
+- Inspecting repository structure
+- Collecting codebase information required by another agent
+
+Typical tools:
 
 ```text
 list_classes
@@ -258,105 +166,299 @@ repository_statistics
 index_repository
 ```
 
-The flow is:
+Flow:
 
 ```text
 Repository Agent
-       |
-       v
-Repository LLM
-       |
-       v
-Repository Tool
-       |
-       v
+      │
+      ▼
+Repository Tools
+      │
+      ▼
 RepositoryService
+      │
+      ▼
+Repository Data
 ```
 
-The Repository Agent does not duplicate repository business logic.
+The Repository Agent does **not** implement repository analysis logic itself.
 
 ---
 
-# RAG Agent
+## 2. RAG Agent
 
-The RAG Agent handles questions that require understanding or reasoning over the repository code.
+The RAG Agent handles questions that require contextual understanding of the indexed codebase.
 
-Example:
+Examples:
 
 ```text
-"Explain how authentication works"
+"Explain how authentication works."
+
+"Where is database connection handled?"
+
+"How does the request flow through this application?"
+
+"Explain this class and its dependencies."
 ```
 
 Flow:
 
 ```text
 RAG Agent
-    |
-    v
-RAG LLM
-    |
-    v
-codebase_chat
-    |
-    v
+    │
+    ▼
+RAG Tools
+    │
+    ▼
 RAGService
-    |
-    v
+    │
+    ▼
 Retriever
-    |
-    v
+    │
+    ▼
 ChromaDB
-    |
-    v
+    │
+    ▼
+Relevant Context
+    │
+    ▼
 LLM
-    |
-    v
+    │
+    ▼
 Answer
+```
+
+The RAG Agent focuses on **reasoning over repository context**, rather than directly implementing retrieval logic.
+
+---
+
+## 3. Code Review Agent
+
+The Code Review Agent is responsible for architecture and code-quality analysis.
+
+It can be used after another agent has gathered the required repository information.
+
+Typical responsibilities include:
+
+- Reviewing architecture
+- Identifying design issues
+- Evaluating separation of concerns
+- Identifying potential coupling
+- Reviewing implementation patterns
+- Highlighting maintainability concerns
+- Providing architectural recommendations
+
+Example workflow:
+
+```text
+User
+  │
+  ▼
+Supervisor
+  │
+  ▼
+Repository Agent
+  │
+  ├── Find authentication classes
+  ├── Find related functions
+  └── Inspect dependencies
+  │
+  ▼
+Supervisor
+  │
+  ▼
+Code Review Agent
+  │
+  ├── Analyze architecture
+  ├── Identify issues
+  └── Provide recommendations
+  │
+  ▼
+Supervisor
+  │
+  ▼
+Final Response
+```
+
+This is an important distinction:
+
+> The Repository Agent gathers facts.  
+> The Code Review Agent reasons about those facts.
+
+---
+
+# 🔄 Agent-to-Agent Handoffs
+
+The architecture now supports controlled handoffs between specialized agents.
+
+A task does not necessarily end after one agent completes its work.
+
+For example:
+
+```text
+Supervisor
+    │
+    ▼
+Repository Agent
+    │
+    ▼
+Repository Result
+    │
+    ▼
+Supervisor
+    │
+    ▼
+Code Review Agent
+    │
+    ▼
+Review Result
+    │
+    ▼
+Supervisor
+    │
+    ▼
+Final Response
+```
+
+The Supervisor acts as the coordinator between agents.
+
+This makes it possible to support workflows where:
+
+```text
+One agent gathers information
+        ↓
+Another agent analyzes it
+        ↓
+Another step validates the result
+        ↓
+Supervisor produces the final response
 ```
 
 ---
 
-# Human-in-the-Loop
+# 🧩 Shared Graph State
 
-Human-in-the-loop support was implemented using LangGraph interrupts.
+Agents communicate through shared LangGraph state rather than relying on isolated execution.
 
-Only repository-changing operations currently require approval.
-
-Current approval-required operation:
+The state can carry information such as:
 
 ```text
-index_repository
+User Request
+    ↓
+Current Agent
+    ↓
+Agent Decision
+    ↓
+Intermediate Results
+    ↓
+Tool Results
+    ↓
+Review Results
+    ↓
+Approval State
+    ↓
+Iteration Count
+    ↓
+Final Response
 ```
+
+Conceptually:
+
+```text
+                  Shared Graph State
+                         │
+        ┌────────────────┼────────────────┐
+        │                │                │
+        ▼                ▼                ▼
+ Repository Agent     RAG Agent      Code Review Agent
+        │                │                │
+        └────────────────┼────────────────┘
+                         │
+                         ▼
+                     Supervisor
+```
+
+This allows the output of one agent to become useful context for another agent.
+
+---
+
+# 🔁 Controlled Agent Iterations
+
+Multi-agent systems can easily become inefficient if agents continuously hand work back and forth.
+
+The current architecture therefore introduces **controlled agent iterations**.
+
+Conceptually:
+
+```text
+iteration = 0
+
+       ↓
+
+Supervisor
+       ↓
+Agent
+       ↓
+Supervisor
+       ↓
+Agent
+       ↓
+Complete
+```
+
+The graph tracks agent execution so that unnecessary loops can be avoided.
+
+The objective is:
+
+- Prevent infinite agent loops
+- Reduce unnecessary LLM calls
+- Keep execution predictable
+- Make multi-agent workflows easier to debug
+- Control local-model latency
+
+---
+
+# 🧑‍💻 Human-in-the-Loop
+
+Human-in-the-loop workflows are implemented using **LangGraph interrupts and checkpointing**.
+
+Operations that can change repository state require explicit approval.
 
 Example:
 
 ```text
 User
- |
- v
+  │
+  ▼
 Supervisor
- |
- v
+  │
+  ▼
 Repository Agent
- |
- v
+  │
+  ▼
 index_repository
- |
- v
+  │
+  ▼
 Approval Node
- |
- v
-Human Approval
- |
- +---- No ----> Reject
- |
- Yes
- |
- v
-Tool Execution
- |
- v
-Response
+  │
+  ▼
+LangGraph Interrupt
+  │
+  ├───────────────┐
+  │               │
+ Approve        Reject
+  │               │
+  ▼               ▼
+Execute          Stop
+```
+
+The graph pauses until a human decision is supplied.
+
+Possible outcomes:
+
+```text
+approved
+rejected
 ```
 
 Read-only operations such as:
@@ -372,68 +474,101 @@ do not require approval.
 
 ---
 
-# Conversation Memory
+# 🧠 Conversation Memory
 
-Conversation memory uses LangGraph checkpointing.
+Conversation state is maintained using LangGraph checkpointing.
 
-Each conversation uses a thread ID.
+Each conversation can use a thread ID:
 
-Example:
-
-```text
-thread_id = multi-agent-1
+```json
+{
+  "thread_id": "multi-agent-1"
+}
 ```
 
-The graph can therefore maintain state across multiple requests belonging to the same thread.
-
-Current architecture:
+Conceptually:
 
 ```text
 Conversation
-     |
-     v
+     │
+     ▼
 LangGraph
-     |
-     v
+     │
+     ▼
 Checkpoint
-     |
-     v
+     │
+     ▼
 Thread State
 ```
 
-Long-term persistent memory is not implemented yet.
+This provides short-term conversation continuity across requests in the same thread.
+
+### Current limitation
+
+Long-term persistent memory is **not implemented yet**.
+
+Future memory capabilities may include:
+
+- Repository-specific memory
+- User preferences
+- Conversation summaries
+- Persistent project context
 
 ---
 
-# Observability
+# 📊 Observability
 
-Version 4 adds structured logging around agent execution.
+The system includes structured observability across the execution pipeline.
 
-Example:
+The goal is to make agentic execution understandable instead of treating the LLM as a black box.
+
+The execution flow can be traced as:
 
 ```text
-request_started
-      |
-      v
-supervisor started
-      |
-      v
-supervisor decision
-      |
-      v
-agent execution
-      |
-      v
-tool execution
-      |
-      v
-final response
-      |
-      v
-request_completed
+Request Started
+      │
+      ▼
+Supervisor Started
+      │
+      ▼
+Supervisor Decision
+      │
+      ▼
+Agent Started
+      │
+      ▼
+Tool Started
+      │
+      ▼
+Tool Completed
+      │
+      ▼
+Agent Completed
+      │
+      ▼
+Supervisor Decision
+      │
+      ▼
+Final Response
+      │
+      ▼
+Request Completed
 ```
 
-Example logs:
+Logging covers:
+
+- Supervisor decisions
+- Agent execution
+- Agent handoffs
+- Tool execution
+- Node execution
+- LLM calls
+- Errors
+- Latency
+- Request completion
+- Intermediate execution state
+
+Example:
 
 ```text
 agent=supervisor event=started
@@ -444,167 +579,227 @@ agent=supervisor event=decision decision=repository
 ```
 
 ```text
-graph_node=approval event=not_required
+agent=repository event=completed
 ```
 
 ```text
-tool=list_classes event=started
+agent=supervisor event=handoff target=code_review
 ```
 
 ```text
 tool=list_classes event=completed
 ```
 
-```text
-chat event=request_completed
-```
-
-This makes it possible to understand what the agent actually did instead of treating the LLM as a black box.
+This provides visibility into **what the system actually did**.
 
 ---
 
-# LangSmith
+# 🔬 LangSmith
 
-LangSmith is part of the project's observability stack.
+LangSmith is part of the observability stack.
 
 It can be used to inspect:
 
-* Graph execution
-* LLM calls
-* Tool calls
-* Agent execution
-* Latency
-* Errors
-* Inputs and outputs
-* Execution traces
+- Graph execution
+- LLM calls
+- Tool calls
+- Agent execution
+- Latency
+- Errors
+- Inputs and outputs
+- Execution traces
 
-The application also assigns meaningful run names where appropriate.
+Typical environment configuration:
 
-LangSmith configuration depends on the environment variables described below.
+```env
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=your_langsmith_api_key
+LANGCHAIN_PROJECT=AI-Codebase-Assistant
+```
 
 ---
 
-# MCP Architecture
+# 🔌 MCP Architecture
 
-MCP is integrated separately from LangGraph but shares the same Service Layer.
+Model Context Protocol is integrated separately from LangGraph while sharing the same Service Layer.
 
 ```text
-                 Service Layer
-                      |
-              +-------+-------+
-              |               |
-              v               v
-         LangGraph           MCP
-              |               |
-              v               v
-            Tools           Tools
+                  Service Layer
+                       │
+              ┌────────┴────────┐
+              │                 │
+              ▼                 ▼
+         LangGraph             MCP
+              │                 │
+              ▼                 ▼
+            Tools             Tools
 ```
 
-MCP components currently include:
+MCP components include:
 
-* MCP Server
-* MCP Tools
-* MCP Resources
-* MCP Prompts
+- MCP Server
+- MCP Tools
+- MCP Resources
+- MCP Prompts
 
-The MCP server can be started using:
+Start the MCP server with:
 
 ```bash
 python run_mcp.py
 ```
 
+The MCP server is separate from the FastAPI application.
+
 ---
 
-# GitHub Repository Indexing
+# 🗂️ Repository Intelligence
 
-The indexing pipeline supports GitHub repositories.
+The project uses repository analysis to understand source-code structure.
 
-The flow is:
+Python AST analysis can extract information such as:
+
+- Classes
+- Functions
+- Imports
+- Repository statistics
+
+The RAG pipeline also stores repository metadata with indexed chunks.
+
+Conceptually:
+
+```text
+Repository
+    │
+    ├───────────────┐
+    ▼               ▼
+AST Analyzer       RAG Pipeline
+    │               │
+    ▼               ▼
+Code Structure   Chunking
+                    │
+                    ▼
+                Embeddings
+                    │
+                    ▼
+                 ChromaDB
+```
+
+---
+
+# 🐙 GitHub Repository Indexing
+
+GitHub repositories can be indexed through the repository indexing workflow.
 
 ```text
 GitHub URL
-    |
-    v
+    │
+    ▼
 Clone Repository
-    |
-    v
+    │
+    ▼
 Temporary Local Directory
-    |
-    v
+    │
+    ▼
 Repository Loader
-    |
-    v
+    │
+    ▼
+Analyzer
+    │
+    ▼
 Chunking
-    |
-    v
+    │
+    ▼
 Embeddings
-    |
-    v
+    │
+    ▼
 ChromaDB
 ```
 
-The existing indexing and repository services are reused.
+The existing indexing and repository services are reused rather than duplicating the implementation inside agents.
 
 ---
 
-# Technology Stack
+# 🏛️ Service Layer: Single Source of Truth
 
-## Backend
-
-* Python
-* FastAPI
-* Uvicorn
-
-## AI / LLM
-
-* Ollama
-* Qwen
-* LangChain
-* LangGraph
-
-Current local model:
+One of the most important architectural rules is that the **Service Layer owns business logic**.
 
 ```text
-qwen2.5:0.5b
+                 Service Layer
+                      │
+          ┌───────────┴───────────┐
+          │                       │
+          ▼                       ▼
+      LangGraph                  MCP
+          │                       │
+          ▼                       ▼
+        Agents                  Tools
 ```
 
-The project intentionally uses a smaller local model because larger local models cause significant performance problems on the development machine.
+Business logic should **not** be duplicated inside:
 
-## RAG
+- LangGraph nodes
+- Agents
+- MCP tools
+- API routes
 
-* HuggingFace Embeddings
-* BAAI BGE Small
-* ChromaDB
-* LangChain Retrieval
-
-Current embedding model:
+Instead:
 
 ```text
-BAAI/bge-small-en-v1.5
+Agent
+  ↓
+Tool
+  ↓
+Service
 ```
 
-## Agent Framework
+For example:
 
-* LangGraph
-* LangChain Tools
-* ToolNode
-* LangGraph Checkpointing
-* LangGraph Interrupts
+```text
+list_classes
+      ↓
+RepositoryService
+```
 
-## Protocol
-
-* Model Context Protocol (MCP)
-
-## Observability
-
-* LangSmith
-* Python logging
+The Repository Agent chooses the appropriate tool, but the actual class extraction logic remains inside the existing service/analyzer layer.
 
 ---
 
-# Project Structure
+# 🧱 Service Architecture
 
-Current high-level structure:
+The current services include:
+
+```text
+ChatService
+RepositoryService
+RAGService
+IndexingService
+```
+
+Their responsibilities remain separated:
+
+### ChatService
+
+Coordinates the application-level chat workflow.
+
+### RepositoryService
+
+Handles repository-related business operations.
+
+### RAGService
+
+Handles retrieval and contextual codebase questions.
+
+### IndexingService
+
+Handles repository indexing and ingestion.
+
+This separation allows LangGraph, MCP, API routes, and tools to reuse the same underlying functionality.
+
+---
+
+# 📁 Project Structure
+
+High-level structure:
 
 ```text
 AI-Codebase-Assistant/
@@ -630,7 +825,8 @@ AI-Codebase-Assistant/
 │   └── agents/
 │       ├── supervisor.py
 │       ├── repository_agent.py
-│       └── rag_agent.py
+│       ├── rag_agent.py
+│       └── code_review_agent.py
 │
 ├── indexing/
 │   └── ...
@@ -673,7 +869,63 @@ AI-Codebase-Assistant/
 
 ---
 
-# Environment Setup
+# 🛠️ Technology Stack
+
+## Backend
+
+- Python
+- FastAPI
+- Uvicorn
+
+## AI / LLM
+
+- Ollama
+- Qwen
+- LangChain
+- LangGraph
+
+Current local model:
+
+```text
+qwen2.5:0.5b
+```
+
+A smaller local model is intentionally used because larger models can cause significant performance issues on the development machine.
+
+## RAG
+
+- HuggingFace Embeddings
+- BAAI BGE Small
+- ChromaDB
+- LangChain Retrieval
+
+Current embedding model:
+
+```text
+BAAI/bge-small-en-v1.5
+```
+
+## Agent Framework
+
+- LangGraph
+- LangChain Tools
+- ToolNode
+- LangGraph Checkpointing
+- LangGraph Interrupts
+- Multi-Agent Orchestration
+
+## Protocol
+
+- Model Context Protocol (MCP)
+
+## Observability
+
+- LangSmith
+- Python logging
+
+---
+
+# ⚙️ Environment Setup
 
 ## 1. Clone the repository
 
@@ -682,46 +934,31 @@ git clone <repository-url>
 cd AI-Codebase-Assistant
 ```
 
----
+## 2. Create a virtual environment
 
-# 2. Create a Virtual Environment
-
-Windows:
+### Windows
 
 ```powershell
 python -m venv venv
-```
-
-Activate it:
-
-```powershell
 venv\Scripts\activate
 ```
 
-Linux/macOS:
+### Linux / macOS
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
----
-
-# 3. Install Dependencies
+## 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
+## 4. Start Ollama
 
-# 4. Install and Start Ollama
-
-Install Ollama on your machine.
-
-Then make sure the Ollama service is running.
-
-Verify:
+Verify that Ollama is running:
 
 ```bash
 ollama list
@@ -733,19 +970,13 @@ The current application uses:
 qwen2.5:0.5b
 ```
 
-If it is not available:
+If required:
 
 ```bash
 ollama pull qwen2.5:0.5b
 ```
 
-Do not switch to a significantly larger model unless your hardware can handle it.
-
----
-
-# 5. Configure Environment Variables
-
-Create a `.env` file in the project root.
+## 5. Configure `.env`
 
 Example:
 
@@ -760,7 +991,7 @@ CHUNK_SIZE=1000
 CHUNK_OVERLAP=200
 ```
 
-For LangSmith, configure the required environment variables if tracing is enabled:
+Optional LangSmith configuration:
 
 ```env
 LANGCHAIN_TRACING_V2=true
@@ -770,45 +1001,33 @@ LANGCHAIN_PROJECT=AI-Codebase-Assistant
 
 Do not commit `.env` to Git.
 
----
-
-# 6. Start the FastAPI Application
-
-From the project root:
+## 6. Start FastAPI
 
 ```powershell
 uvicorn app:app --reload
 ```
 
-The application should start on the local Uvicorn server.
-
-Open Swagger:
+Swagger:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-Open OpenAPI:
+OpenAPI:
 
 ```text
 http://127.0.0.1:8000/openapi.json
 ```
 
----
-
-# 7. Start MCP Server
-
-If MCP functionality is required:
+## 7. Start MCP
 
 ```powershell
 python run_mcp.py
 ```
 
-The MCP server is separate from the FastAPI application.
-
 ---
 
-# Using the Chat API
+# 💬 Chat API
 
 The main chat endpoint is:
 
@@ -816,7 +1035,7 @@ The main chat endpoint is:
 POST /chat
 ```
 
-Example request:
+Example:
 
 ```json
 {
@@ -838,17 +1057,17 @@ The `thread_id` allows LangGraph checkpointing to maintain conversation state.
 
 ---
 
-# Example Agent Execution
+# 🔄 Example Multi-Agent Workflows
 
-## Repository Query
+## Workflow 1 — Repository Query
 
 Request:
 
 ```text
-List all the classes in my repository
+List all the classes in my repository.
 ```
 
-Expected flow:
+Flow:
 
 ```text
 FastAPI
@@ -857,56 +1076,32 @@ ChatService
    ↓
 Supervisor
    ↓
-repository
-   ↓
 Repository Agent
    ↓
-Repository LLM
-   ↓
-list_classes
+Repository Tool
    ↓
 RepositoryService
    ↓
 Tool Result
    ↓
-Repository LLM
+Repository Agent
+   ↓
+Supervisor
    ↓
 Final Answer
 ```
 
-Example logs:
-
-```text
-agent=supervisor event=started
-```
-
-```text
-agent=supervisor event=decision decision=repository
-```
-
-```text
-graph_node=approval event=not_required
-```
-
-```text
-tool=list_classes event=started
-```
-
-```text
-tool=list_classes event=completed
-```
-
 ---
 
-# RAG Query
+## Workflow 2 — RAG Query
 
 Request:
 
 ```text
-Explain how authentication works in this project
+Explain how authentication works in this project.
 ```
 
-Expected architecture:
+Flow:
 
 ```text
 FastAPI
@@ -917,9 +1112,7 @@ Supervisor
    ↓
 RAG Agent
    ↓
-RAG LLM
-   ↓
-codebase_chat
+RAG Tool
    ↓
 RAGService
    ↓
@@ -931,12 +1124,67 @@ Context
    ↓
 LLM
    ↓
-Answer
+RAG Agent
+   ↓
+Supervisor
+   ↓
+Final Answer
 ```
 
 ---
 
-# Human-in-the-Loop Example
+## Workflow 3 — Repository Analysis + Code Review
+
+Request:
+
+```text
+Find the authentication classes and review their architecture.
+```
+
+Flow:
+
+```text
+                   Supervisor
+                       │
+                       ▼
+              Repository Agent
+                       │
+             ┌─────────┴─────────┐
+             │                   │
+             ▼                   ▼
+       Find Classes        Find Functions
+             │                   │
+             └─────────┬─────────┘
+                       ▼
+                 Shared State
+                       │
+                       ▼
+                   Supervisor
+                       │
+                       ▼
+               Code Review Agent
+                       │
+             ┌─────────┴─────────┐
+             │                   │
+             ▼                   ▼
+       Architecture         Code Quality
+          Review                Review
+             │                   │
+             └─────────┬─────────┘
+                       ▼
+                   Supervisor
+                       │
+                       ▼
+                 Final Response
+```
+
+This workflow demonstrates the main benefit of the multi-agent architecture:
+
+> **Different agents can specialize in different stages of the same task.**
+
+---
+
+# 🧑‍⚖️ Example HITL Workflow
 
 A repository-changing operation such as:
 
@@ -953,30 +1201,22 @@ Repository Agent
     ↓
 index_repository
     ↓
-ApprovalNode
+Approval Node
     ↓
-LangGraph interrupt
+LangGraph Interrupt
+    ↓
+Human Decision
+    │
+    ├── Approve → Tool Execution → Continue
+    │
+    └── Reject  → Stop Execution
 ```
 
-The graph pauses until a human decision is supplied.
-
-Possible outcomes:
-
-```text
-approved
-```
-
-or:
-
-```text
-rejected
-```
-
-This functionality relies on LangGraph checkpointing.
+Checkpointing allows the graph to pause and later resume from the interrupted state.
 
 ---
 
-# Repository Indexing
+# 📚 Repository Indexing
 
 Before asking repository questions, the repository needs to be indexed.
 
@@ -996,22 +1236,13 @@ Embeddings
 ChromaDB
 ```
 
-GitHub repositories can also be indexed through the GitHub repository workflow.
+GitHub repositories can also be processed through the GitHub indexing workflow.
 
 ---
 
-# Important Architecture Rules
+# 🔐 Architecture Rules
 
-## 1. Service Layer is the Source of Truth
-
-Do not put business logic inside:
-
-* LangGraph nodes
-* Agents
-* MCP tools
-* API routes
-
-Instead:
+## Rule 1 — Service Layer Owns Business Logic
 
 ```text
 Agent
@@ -1021,299 +1252,241 @@ Tool
 Service
 ```
 
----
+Do not move service logic into the agent.
 
-## 2. Do Not Duplicate Logic
+## Rule 2 — Agents Own Responsibilities
 
-For example:
-
-```text
-list_classes
-    ↓
-RepositoryService
-```
-
-The Repository Agent should not implement class extraction itself.
-
----
-
-## 3. Agents Are Responsible for Orchestration
-
-The Repository Agent decides which repository tool is appropriate.
-
-The RAG Agent decides how to use the RAG tools.
-
-The Supervisor decides which agent should handle the request.
-
----
-
-# Current Multi-Agent Architecture
-
-The current system intentionally starts with only two specialized agents:
+Each agent should have a clear purpose.
 
 ```text
-                    Supervisor
-                        |
-              +---------+---------+
-              |                   |
-              v                   v
-      Repository Agent        RAG Agent
+Supervisor       → Routing & orchestration
+Repository Agent → Repository operations
+RAG Agent        → Contextual code reasoning
+Code Review      → Architecture & code review
 ```
 
-Future agents may include:
+## Rule 3 — Tools Are Controlled Interfaces
 
-```text
-Code Review Agent
-Documentation Agent
-Testing Agent
-GitHub Agent
-```
+Agents should access application functionality through tools rather than directly manipulating infrastructure.
 
-These should **not** be added until the current architecture is stable.
+## Rule 4 — No Duplicate Business Logic
+
+Do not implement the same operation in:
+
+- API routes
+- Agents
+- LangGraph nodes
+- MCP tools
+- Services
+
+The Service Layer remains the source of truth.
+
+## Rule 5 — Keep Agent Loops Controlled
+
+Agent handoffs must have clear completion conditions and iteration limits.
+
+## Rule 6 — State Changes Need Oversight
+
+Operations that modify repository state should be protected by Human-in-the-Loop workflows where appropriate.
 
 ---
 
-# Current Known Limitation
+# ⚠️ Current Limitations
 
-The Supervisor currently uses the local:
+## Local LLM Performance
+
+The current Supervisor and specialized agents use:
 
 ```text
 qwen2.5:0.5b
 ```
 
-model.
+Because this is a small local model:
 
-Because this is a very small model, routing can occasionally be incorrect.
+- Routing can occasionally be incorrect
+- Complex multi-step reasoning can be limited
+- Multiple agent calls increase latency
+- Tool selection can require additional safeguards
 
-For example, a conceptual question such as:
-
-```text
-Why is this class implemented this way?
-```
-
-may sometimes be incorrectly routed to the Repository Agent.
-
-The current Supervisor includes a fallback to the RAG agent when it cannot recognize a valid routing decision.
-
-Improving structured Supervisor routing is the next hardening task.
-
----
-
-# Performance Considerations
-
-The local LLM is the main performance bottleneck.
-
-A typical request may require multiple LLM calls:
+A multi-agent request may involve:
 
 ```text
 Supervisor LLM
-       ↓
+      ↓
 Specialized Agent LLM
-       ↓
+      ↓
 Tool
-       ↓
+      ↓
 Specialized Agent LLM
+      ↓
+Supervisor LLM
 ```
 
-This is expected in the multi-agent architecture.
-
-Repository tools themselves are comparatively fast.
-
-For example:
-
-```text
-list_classes
-latency ≈ hundreds of milliseconds
-```
-
-while local LLM inference can take several seconds.
-
-The project therefore intentionally avoids unnecessarily large local models.
+This is expected, but it makes performance optimization important.
 
 ---
 
-# Development Workflow
-
-When modifying the project:
-
-1. Inspect the existing implementation.
-2. Reuse existing services.
-3. Modify only the required layer.
-4. Test the affected graph path.
-5. Check logs.
-6. Verify tool execution.
-7. Verify the final response.
-8. Check LangSmith traces when enabled.
-
-Avoid rewriting working components without a specific reason.
-
----
-
-# Debugging
-
-If the application fails during startup, inspect the first Python traceback.
-
-Common problems include:
-
-### Import errors
-
-Example:
-
-```text
-ImportError: cannot import name ...
-```
-
-Check whether an old import is still referencing a class/function removed during the architecture refactor.
-
-### Ollama errors
-
-Verify:
-
-```bash
-ollama list
-```
-
-and make sure Ollama is running.
-
-### ChromaDB / RAG errors
-
-Verify that the repository has been indexed and that the configured embedding model matches the vectors stored in the database.
-
-### Supervisor routing errors
-
-Check logs for:
-
-```text
-agent=supervisor event=decision
-```
-
-The expected decision should be:
-
-```text
-repository
-```
-
-or:
-
-```text
-rag
-```
-
----
-
-# Testing Checklist
+# 🧪 Testing Checklist
 
 ## Basic API
 
-* [ ] FastAPI starts successfully
-* [ ] `/docs` loads
-* [ ] `/chat` responds
-
-## Repository Agent
-
-* [ ] List classes
-* [ ] List functions
-* [ ] List imports
-* [ ] Repository statistics
-
-## RAG Agent
-
-* [ ] Codebase questions
-* [ ] Authentication explanation
-* [ ] Class/function explanation
-* [ ] Repository architecture questions
+- [ ] FastAPI starts successfully
+- [ ] `/docs` loads
+- [ ] `/chat` responds
 
 ## Supervisor
 
-* [ ] Repository queries route to Repository Agent
-* [ ] Conceptual/code-understanding queries route to RAG Agent
-* [ ] Invalid Supervisor output has a safe fallback
+- [ ] Repository queries route to Repository Agent
+- [ ] Contextual questions route to RAG Agent
+- [ ] Review requests can reach Code Review Agent
+- [ ] Invalid routing has a safe fallback
+- [ ] Agent iterations terminate correctly
+
+## Repository Agent
+
+- [ ] List classes
+- [ ] List functions
+- [ ] List imports
+- [ ] Repository statistics
+- [ ] Repository indexing
+
+## RAG Agent
+
+- [ ] Codebase questions
+- [ ] Authentication explanation
+- [ ] Class/function explanation
+- [ ] Architecture questions
+
+## Code Review Agent
+
+- [ ] Architecture review
+- [ ] Separation-of-concerns review
+- [ ] Code-quality analysis
+- [ ] Review receives previous agent results
+
+## Agent Handoffs
+
+- [ ] Repository → Supervisor handoff works
+- [ ] Supervisor → Code Review handoff works
+- [ ] Shared state survives handoffs
+- [ ] Agent loops terminate
 
 ## Memory
 
-* [ ] Same thread maintains conversation context
-* [ ] Different threads remain independent
+- [ ] Same thread maintains context
+- [ ] Different threads remain independent
 
 ## HITL
 
-* [ ] Read-only tools execute without approval
-* [ ] Repository-changing tools trigger approval
-* [ ] Approval resumes execution
-* [ ] Rejection prevents execution
+- [ ] Read-only tools execute without approval
+- [ ] State-changing tools trigger approval
+- [ ] Approval resumes execution
+- [ ] Rejection prevents execution
 
 ## Observability
 
-* [ ] Supervisor logs
-* [ ] Agent logs
-* [ ] Tool logs
-* [ ] Error logs
-* [ ] Latency logs
-* [ ] LangSmith traces
+- [ ] Supervisor logs
+- [ ] Agent logs
+- [ ] Handoff logs
+- [ ] Tool logs
+- [ ] Error logs
+- [ ] Latency logs
+- [ ] LangSmith traces
 
 ---
 
-# Roadmap
+# 🗺️ Development Roadmap
 
-## Completed
+## ✅ Completed — Phase 1: RAG Foundation
 
-### Phase 1 — Observability & Reliable Agent Execution
+- Repository loading
+- Chunking
+- Embeddings
+- ChromaDB
+- Retrieval
+- Basic codebase Q&A
+- Ollama integration
 
-Implemented:
+## ✅ Completed — Phase 2: Service Layer & Repository Intelligence
 
-* Structured logging
-* Node-level visibility
-* Tool execution logging
-* LLM execution logging
-* Latency measurement
-* Error logging
-* Agent decision logging
-* LangSmith integration
+- Service-oriented architecture
+- `ChatService`
+- `RepositoryService`
+- `RAGService`
+- `IndexingService`
+- Python AST analysis
+- Repository metadata
+- Repository statistics
+- Structured repository tools
 
----
+## ✅ Completed — Phase 3: LangGraph & Tool Calling
 
-## Completed
+- StateGraph
+- Typed graph state
+- Nodes
+- Edges
+- Conditional execution
+- Tool calling
+- ToolNode
+- Graph execution
+- Streaming
 
-### Phase 2 — Human-in-the-Loop
+## ✅ Completed — Phase 4: MCP & Memory
 
-Implemented:
+- MCP Server
+- MCP Tools
+- MCP Resources
+- MCP Prompts
+- LangGraph checkpointing
+- Thread-based conversation memory
 
-* LangGraph interrupts
-* Approval node
-* Checkpoint-based pause/resume
-* Approval state
-* Approval request information
-* Rejection handling
-* Protection for repository-changing tools
+## ✅ Completed — Phase 5: Observability & HITL
 
----
+- Structured logging
+- Node-level visibility
+- Agent decision logging
+- Tool execution logging
+- LLM execution logging
+- Latency measurement
+- Error logging
+- LangSmith integration
+- LangGraph interrupts
+- Approval workflows
+- Checkpoint-based pause/resume
 
-## Current
+## 🚀 Current — Phase 6: Multi-Agent AI
 
-### Phase 3 — Multi-Agent Architecture
-
-Implemented:
+Current architecture:
 
 ```text
-Supervisor
-    |
-    +-- Repository Agent
-    |
-    +-- RAG Agent
+                 Supervisor
+                      │
+        ┌─────────────┼─────────────┐
+        │             │             │
+        ▼             ▼             ▼
+ Repository         RAG        Code Review
+   Agent           Agent          Agent
+        │             │             │
+        └─────────────┼─────────────┘
+                      │
+                      ▼
+                 Shared State
 ```
 
 Current focus:
 
-* Supervisor routing reliability
-* Agent-level observability
-* Shared graph state
-* Reliable tool execution
-* HITL compatibility with subgraphs
+- Reliable Supervisor routing
+- Agent-to-agent handoffs
+- Shared state
+- Controlled agent iterations
+- Agent-level observability
+- HITL compatibility
+- Better intermediate-result handling
+- Reliable multi-step workflows
 
----
+## 🔭 Future — Phase 7: Long-Term Memory
 
-## Future Phase 4 — Long-Term Memory
-
-Planned:
+Potential capabilities:
 
 ```text
 Conversation
@@ -1325,36 +1498,81 @@ LangGraph Checkpoint
 Long-Term Persistent Memory
 ```
 
-Possible future capabilities:
+Possible features:
 
-* User preferences
-* Repository-specific memory
-* Conversation summaries
-* Persistent project context
+- Repository-specific memory
+- Conversation summaries
+- Persistent project context
+- User preferences
 
-This is intentionally not implemented yet.
+## 🔭 Future — Phase 8: Repository Intelligence
+
+Potential improvements:
+
+- Better dependency analysis
+- Cross-file relationship analysis
+- Improved code graph representation
+- Deeper architectural understanding
+- Smarter retrieval
+- Repository-wide reasoning
+
+## 🔭 Future — Phase 9: Safer Automated Coding
+
+Potential capabilities:
+
+- Code modification proposals
+- Patch generation
+- Test generation
+- Automated validation
+- Git diff generation
+- Human approval before applying changes
+- Safer repository modification workflows
 
 ---
 
-# Design Principles
+# 🎯 What This Project Is Teaching Me
 
-The project follows these principles:
+The biggest lesson from the multi-agent phase is:
+
+> **Multi-Agent AI is not simply about adding more LLMs.**
+
+The difficult part is designing:
+
+- Clear agent responsibilities
+- Reliable routing
+- Shared state
+- Agent handoffs
+- Controlled iterations
+- Tool boundaries
+- Human approval
+- Observability
+- Failure handling
+
+A good multi-agent system is therefore closer to **distributed software architecture** than simply calling multiple LLMs.
+
+---
+
+# 🧠 Design Principles
 
 ### Separation of Concerns
 
 Each layer has one primary responsibility.
 
-### Reuse Existing Services
+### Service Reuse
 
-Business logic stays inside the Service Layer.
+Existing business logic should be reused instead of duplicated.
 
 ### Agent Specialization
 
-Each agent should have a clear purpose.
+Each agent should solve a clearly defined class of problems.
 
 ### Controlled Tool Access
 
 Agents receive only the tools relevant to their responsibility.
+
+### Agent Coordination
+
+The Supervisor coordinates specialized agents instead of performing every task itself.
 
 ### Human Oversight
 
@@ -1362,61 +1580,143 @@ Potentially state-changing operations can require explicit approval.
 
 ### Observable AI
 
-Agent decisions should be traceable and debuggable.
+Agent decisions, tool calls, handoffs, and failures should be traceable.
+
+### Controlled Autonomy
+
+Agents should have bounded execution rather than unrestricted loops.
 
 ### Incremental Architecture
 
-New agents and capabilities should be introduced only when the current system is stable.
+New capabilities should be introduced only when the current architecture is stable.
 
 ---
 
-# Summary
+# 📌 Current System Summary
 
-AI-Codebase-Assistant has evolved from a simple RAG application into an agentic AI system.
-
-The current architecture is:
+The AI-Codebase-Assistant has evolved from:
 
 ```text
-                       User
-                        |
-                        v
-                    FastAPI
-                        |
-                        v
-                   ChatService
-                        |
-                        v
-                  Supervisor LLM
-                        |
-             +----------+----------+
-             |                     |
-             v                     v
-      Repository Agent          RAG Agent
-             |                     |
-             v                     v
-      Repository Tools          RAG Tools
-             |                     |
-             v                     v
-     RepositoryService         RAGService
-             |                     |
-             v                     v
-      Repository Data          ChromaDB
+Simple RAG
 ```
 
-The system now combines:
+into:
 
-* RAG
-* Agentic AI
-* LangGraph
-* Multi-agent orchestration
-* Tool calling
-* Human-in-the-loop
-* Conversation memory
-* MCP
-* GitHub repository indexing
-* Vector search
-* Repository AST analysis
-* LangSmith observability
-* FastAPI
+```text
+                    User
+                     │
+                     ▼
+                  FastAPI
+                     │
+                     ▼
+                ChatService
+                     │
+                     ▼
+                Supervisor
+                     │
+          ┌──────────┼──────────┐
+          │          │          │
+          ▼          ▼          ▼
+    Repository      RAG      Code Review
+       Agent       Agent        Agent
+          │          │          │
+          ▼          ▼          ▼
+       Tools       Tools       Tools
+          │          │          │
+          └──────────┼──────────┘
+                     ▼
+               Service Layer
+                     │
+        ┌────────────┼────────────┐
+        │            │            │
+        ▼            ▼            ▼
+ RepositoryService RAGService IndexingService
+        │            │            │
+        ▼            ▼            ▼
+ Repository Data  ChromaDB   Repository Index
+```
 
-The next focus is to make the **Supervisor routing reliable and production-ready** before expanding the number of specialized agents.
+With supporting infrastructure:
+
+```text
+                 ┌───────────────────────┐
+                 │      LangGraph        │
+                 │                       │
+                 │ State + Memory + HITL │
+                 │ Handoffs + Routing    │
+                 └───────────┬───────────┘
+                             │
+                             ▼
+                    Multi-Agent System
+
+                 ┌───────────────────────┐
+                 │         MCP           │
+                 │ Tools + Resources     │
+                 │ + Prompts             │
+                 └───────────────────────┘
+
+                 ┌───────────────────────┐
+                 │      LangSmith        │
+                 │ Tracing + Observability│
+                 └───────────────────────┘
+```
+
+---
+
+# 🚀 Final Architecture Journey
+
+```text
+RAG
+ ↓
+Repository Intelligence
+ ↓
+Service Layer
+ ↓
+LangGraph
+ ↓
+Tool Calling
+ ↓
+MCP
+ ↓
+Conversation Memory
+ ↓
+Human-in-the-Loop
+ ↓
+Supervisor Agent
+ ↓
+Specialized Agents
+ ↓
+Agent-to-Agent Handoffs
+ ↓
+Shared State
+ ↓
+Controlled Multi-Agent Execution
+```
+
+The project is now focused on building a **reliable, observable, and controlled AI system for understanding software repositories** rather than simply generating answers from retrieved documents.
+
+---
+
+# 🔭 Next Focus
+
+The immediate priorities are:
+
+1. **Improve Supervisor routing reliability**
+2. **Improve multi-agent evaluation**
+3. **Strengthen agent handoff logic**
+4. **Improve repository intelligence**
+5. **Add long-term memory**
+6. **Optimize streaming and performance**
+7. **Build safer automated coding workflows**
+
+The architecture will continue to evolve incrementally while keeping the **Service Layer as the single source of truth**.
+
+---
+
+## ⭐ If you find this project interesting
+
+The project is being built incrementally to explore how modern AI engineering concepts can be combined into a practical developer tool:
+
+**RAG → Agents → Multi-Agent Systems → MCP → Memory → HITL → Repository Intelligence**
+
+More improvements coming. 🚀
