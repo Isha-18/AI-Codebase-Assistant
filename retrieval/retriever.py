@@ -1,17 +1,26 @@
 from langchain_chroma import Chroma
 
+from config.settings import settings
 from indexing.embeddings import embeddings
 
 
-VECTOR_DB_PATH = "storage/chroma_db"
-
-
 def get_retriever():
+    """
+    Retrieve a larger candidate set.
+    RAGService will rerank these results using
+    code-aware metadata matching.
+    """
+
     vectorstore = Chroma(
-        persist_directory=VECTOR_DB_PATH,
-        embedding_function=embeddings
+        persist_directory=str(settings.CHROMA_DB_PATH),
+        embedding_function=embeddings,
     )
 
     return vectorstore.as_retriever(
-        search_kwargs={"k": 4}
+        search_type="mmr",
+        search_kwargs={
+            "k": settings.RETRIEVAL_RERANK_CANDIDATES,
+            "fetch_k": settings.RETRIEVAL_FETCH_K,
+            "lambda_mult": 0.7,
+        },
     )
